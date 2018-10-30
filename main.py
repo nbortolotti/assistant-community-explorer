@@ -1,76 +1,19 @@
-from datetime import timedelta
-from functools import update_wrapper
-
-from flask import Flask, jsonify, abort, request, make_response, url_for
+from flask import Flask, jsonify, request, make_response
 
 import httplib2
 import logging
 import json
+import googleapiclient.discovery
 
 from google.appengine.api import memcache
-
-import googleapiclient.discovery
-from oauth2client.appengine import AppAssertionCredentials
-
-credentials = AppAssertionCredentials(scope='https://www.googleapis.com/auth/spreadsheets.readonly')
-http = credentials.authorize(httplib2.Http(memcache))
-
-service = googleapiclient.discovery.build('sheets', 'v4')
-
-
+from oauth2client.contrib.appengine import AppAssertionCredentials
 from google.appengine.api import urlfetch
 
 urlfetch.set_default_fetch_deadline(180)
-
 app = Flask(__name__, static_url_path="")
 
 from gdg.models import gdgchapter
-
-def crossdomain(origin=None, methods=None, headers=None,
-                max_age=21600, attach_to_all=True,
-                automatic_options=True):
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
-        headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
-        origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
-        max_age = max_age.total_seconds()
-
-    def get_methods():
-        if methods is not None:
-            return methods
-
-        options_resp = app.make_default_options_response()
-        return options_resp.headers['allow']
-
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
-                resp = app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
-                return resp
-
-            h = resp.headers
-
-            # logging.info('atencion')
-            # logging.info(request.url_root)
-
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            h['Access-Control-Allow-Credentials'] = 'true'
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            return resp
-
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-
-    return decorator
+from models import Settings
 
 @app.route('/')
 def hello():
@@ -80,14 +23,28 @@ def hello():
 def page_not_found(e):
     return 'Sorry, Nothing at this URL.', 404
 
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class config_sheet(object):
+    __metaclass__ = Singleton
+    credentials = AppAssertionCredentials(scope='https://www.googleapis.com/auth/spreadsheets.readonly')
+    http = credentials.authorize(httplib2.Http(memcache))
+    service = googleapiclient.discovery.build('sheets', 'v4')
+
 # testing method to import information
 @app.route('/importschapters', methods=['GET'])
 def import_spreadsheet():
     try:
-        spreadsheet_id = '16FE0UN9nSup8T2LXaFoW0LKbrjN2BOmcrn3Q8VvMTTE'
-        range_name = 'Hoja1!A2:E100'
+        spreadsheet_id = Settings.get('sheet_id')
+        range_name = Settings.get('sheet_range')
 
-        result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute(http=http)
+        config = config_sheet()
+        result = config.service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute(http=config.http)
 
         values = result.get('values', [])
 
@@ -104,7 +61,7 @@ def import_spreadsheet():
 
         return 'importing process completed'
     except:
-        logging.error('Error')
+        logging.error('error into importing process')
         raise
 
 # testing method to explore datastore entity
