@@ -3,6 +3,7 @@ from google.appengine.ext import ndb
 # change for component dependency
 class gdgchapter(ndb.Model):
     create_date = ndb.DateTimeProperty(auto_now_add=True)
+    groupid = ndb.StringProperty()
     groupUrl = ndb.StringProperty()
     groupName = ndb.StringProperty()
     groupStatus = ndb.StringProperty()

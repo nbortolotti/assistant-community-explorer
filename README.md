@@ -33,3 +33,7 @@ gcloud app deploy app.yaml
 
 ## Modules
 
+### Meetup Data integration
+Project used to into the sync routine: https://github.com/pferate/meetup-api
+
+

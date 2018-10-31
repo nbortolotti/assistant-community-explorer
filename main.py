@@ -1,6 +1,7 @@
 import datetime
 
 from flask import Flask, jsonify, request, make_response
+from flask_basicauth import BasicAuth
 from pycountry_convert import (country_alpha2_to_country_name, COUNTRY_NAME_FORMAT_UPPER)
 
 import httplib2
@@ -18,10 +19,23 @@ from google.appengine.api import taskqueue
 
 urlfetch.set_default_fetch_deadline(180)
 app = Flask(__name__, static_url_path="")
+basic_auth = BasicAuth(app)
 
 from gdg.models import gdgchapter, gdgchapterurl
 from models import Settings
 
+app.config['BASIC_AUTH_USERNAME'] = Settings.get('user_access')
+app.config['BASIC_AUTH_PASSWORD'] = Settings.get('pass_access')
+
+@app.route('/api/userconfirmation', methods=['GET'])
+def user():
+    app.config['BASIC_AUTH_USERNAME'] = Settings.get('user_access')
+    app.config['BASIC_AUTH_PASSWORD'] = Settings.get('pass_access')
+
+    if (Settings.get('user_access') == "not set") or (Settings.get('pass_access') == "not set"):
+        return 'User Not Confirmed'
+    else:
+        return 'User Confirmed'
 
 @app.route('/')
 def hello():
@@ -50,7 +64,8 @@ class config_sheet(object):
 
 
 # testing method to import information
-@app.route('/importschapters', methods=['GET'])
+@app.route('/api/importschapters', methods=['GET'])
+@basic_auth.required
 def import_spreadsheet():
     try:
         spreadsheet_id = Settings.get('sheet_id')
@@ -78,7 +93,8 @@ def import_spreadsheet():
         logging.error('error into importing process')
         raise
 
-@app.route('/import_chapter_url', methods=['GET'])
+@app.route('/api/import_chapter_url', methods=['GET'])
+@basic_auth.required
 def import_chapter_url():
     try:
         spreadsheet_id = Settings.get('sheet_id')
@@ -89,11 +105,14 @@ def import_chapter_url():
             http=config.http)
 
         values = result.get('values', [])
+        #gdglist = gdgchapterurl.query().fetch()
 
         for r in values:
-            obj = gdgchapterurl()
-            obj.groupUrlname = r[0]
-            obj.put()
+            #if r[0] not in gdglist:
+            if not gdgchapterurl.query(gdgchapterurl.groupUrlname == r[0]).fetch():
+                obj = gdgchapterurl()
+                obj.groupUrlname = r[0]
+                obj.put()
 
         return 'importing process completed'
     except:
@@ -102,13 +121,15 @@ def import_chapter_url():
 
 
 # testing method to explore datastore entity
-@app.route('/testchapter/<country>', methods=['GET', 'OPTIONS'])
+@app.route('/api/testchapter/<country>', methods=['GET', 'OPTIONS'])
+@basic_auth.required
 def get_testchapter(country):
     q = gdgchapter.query(gdgchapter.countryMod == country)
     return json.dumps(q.count())
 
 
-@app.route('/assistchapter', methods=['POST'])
+@app.route('/api/assistchapter', methods=['POST'])
+@basic_auth.required
 def get_chapter():
     req = request.get_json(silent=True, force=True)
 
@@ -134,7 +155,7 @@ def get_chapter():
 
     return make_response(jsonify({'fulfillmentText': res}))
 
-@app.route('/task_group/<url>', methods=['GET'])
+@app.route('/api/task_group/<url>', methods=['GET'])
 def task_group(url):
     client = meetup.api.Client(Settings.get('meetup_key'))
     group_info = client.GetGroup({'urlname': url})
@@ -145,6 +166,7 @@ def task_group(url):
 
     if not check_chapter:
         obj = gdgchapter()
+        obj.groupid = group_info.id
         obj.groupUrl = url
         obj.groupName = group_info.name
         obj.countryMod = country_alpha2_to_country_name(group_info.country, cn_name_format)
@@ -156,7 +178,8 @@ def task_group(url):
 
         return make_response("task executed")
 
-@app.route('/get_direct_group', methods=['GET'])
+@app.route('/api/get_direct_group', methods=['GET'])
+@basic_auth.required
 def test_group():
     try:
         gdg_urls = gdgchapterurl.query().fetch()
@@ -166,7 +189,7 @@ def test_group():
             coef += 1
             taskqueue.add(method="GET",
                           queue_name='meetup',
-                                 url='/task_group/' + gdg_u.groupUrlname ,
+                                 url='/api/task_group/' + gdg_u.groupUrlname ,
                                  target='worker_' + gdg_u.groupUrlname + str(datetime.datetime.now()),
                                  eta=datetime.datetime.now() + datetime.timedelta(seconds=(20 + coef)))
 

@@ -1,4 +1,5 @@
 Flask
+Flask-BasicAuth
 google-api-python-client
 requests
 meetup-api
