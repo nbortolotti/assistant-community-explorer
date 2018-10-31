@@ -1,0 +1,67 @@
+{
+  "id": "a80a3e17-fd0a-49bd-ae31-722a4b83ff31",
+  "name": "chapter.number",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "",
+      "affectedContexts": [],
+      "parameters": [
+        {
+          "id": "4594b5fc-315b-4714-adad-fae5126a3720",
+          "required": false,
+          "dataType": "@sys.geo-country",
+          "name": "country",
+          "value": "$country",
+          "isList": true
+        }
+      ],
+      "messages": [
+        {
+          "type": 0,
+          "speech": []
+        }
+      ],
+      "defaultResponsePlatforms": {
+        "google": false
+      },
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "cortanaCommand": {
+    "navigateOrService": "NAVIGATE",
+    "target": ""
+  },
+  "webhookUsed": true,
+  "webhookForSlotFilling": false,
+  "lastUpdate": 1539964165,
+  "fallbackIntent": false,
+  "events": [],
+  "userSays": [
+    {
+      "id": "60085bd9-6c78-49b6-94f2-85c77d01cadd",
+      "data": [
+        {
+          "text": "I would like to explore "
+        },
+        {
+          "text": "country",
+          "alias": "country",
+          "meta": "@sys.geo-country",
+          "userDefined": true
+        }
+      ],
+      "isTemplate": false,
+      "count": 0,
+      "updated": 1539947368,
+      "isAuto": false
+    }
+  ],
+  "followUpIntents": [],
+  "liveAgentHandoff": false,
+  "endInteraction": false,
+  "templates": []
+}

@@ -1,93 +1,79 @@
-from datetime import timedelta
-from functools import update_wrapper
+import datetime
 
-from flask import Flask, jsonify, abort, request, make_response, url_for
+from flask import Flask, jsonify, request, make_response
+from flask_basicauth import BasicAuth
+from pycountry_convert import (country_alpha2_to_country_name, COUNTRY_NAME_FORMAT_UPPER)
 
 import httplib2
 import logging
 import json
+import googleapiclient.discovery
+
+# meetup integration
+import meetup.api
 
 from google.appengine.api import memcache
-
-import googleapiclient.discovery
-from oauth2client.appengine import AppAssertionCredentials
-
-credentials = AppAssertionCredentials(scope='https://www.googleapis.com/auth/spreadsheets.readonly')
-http = credentials.authorize(httplib2.Http(memcache))
-
-service = googleapiclient.discovery.build('sheets', 'v4')
-
-
+from oauth2client.contrib.appengine import AppAssertionCredentials
 from google.appengine.api import urlfetch
+from google.appengine.api import taskqueue
 
 urlfetch.set_default_fetch_deadline(180)
-
 app = Flask(__name__, static_url_path="")
+basic_auth = BasicAuth(app)
 
-from gdg.models import gdgchapter
+from gdg.models import gdgchapter, gdgchapterurl
+from models import Settings
 
-def crossdomain(origin=None, methods=None, headers=None,
-                max_age=21600, attach_to_all=True,
-                automatic_options=True):
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
-        headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
-        origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
-        max_age = max_age.total_seconds()
+app.config['BASIC_AUTH_USERNAME'] = Settings.get('user_access')
+app.config['BASIC_AUTH_PASSWORD'] = Settings.get('pass_access')
 
-    def get_methods():
-        if methods is not None:
-            return methods
+@app.route('/api/userconfirmation', methods=['GET'])
+def user():
+    app.config['BASIC_AUTH_USERNAME'] = Settings.get('user_access')
+    app.config['BASIC_AUTH_PASSWORD'] = Settings.get('pass_access')
 
-        options_resp = app.make_default_options_response()
-        return options_resp.headers['allow']
-
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
-                resp = app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
-                return resp
-
-            h = resp.headers
-
-            # logging.info('atencion')
-            # logging.info(request.url_root)
-
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            h['Access-Control-Allow-Credentials'] = 'true'
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            return resp
-
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-
-    return decorator
+    if (Settings.get('user_access') == "not set") or (Settings.get('pass_access') == "not set"):
+        return 'User Not Confirmed'
+    else:
+        return 'User Confirmed'
 
 @app.route('/')
 def hello():
     return 'Hello Community Assistant Explorer '
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return 'Sorry, Nothing at this URL.', 404
 
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class config_sheet(object):
+    __metaclass__ = Singleton
+    credentials = AppAssertionCredentials(scope='https://www.googleapis.com/auth/spreadsheets.readonly')
+    http = credentials.authorize(httplib2.Http(memcache))
+    service = googleapiclient.discovery.build('sheets', 'v4')
+
+
 # testing method to import information
-@app.route('/importschapters', methods=['GET'])
+@app.route('/api/importschapters', methods=['GET'])
+@basic_auth.required
 def import_spreadsheet():
     try:
-        spreadsheet_id = '16FE0UN9nSup8T2LXaFoW0LKbrjN2BOmcrn3Q8VvMTTE'
-        range_name = 'Hoja1!A2:E100'
+        spreadsheet_id = Settings.get('sheet_id')
+        range_name = Settings.get('sheet_range')
 
-        result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute(http=http)
+        config = config_sheet()
+        result = config.service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute(
+            http=config.http)
 
         values = result.get('values', [])
 
@@ -104,16 +90,46 @@ def import_spreadsheet():
 
         return 'importing process completed'
     except:
-        logging.error('Error')
+        logging.error('error into importing process')
         raise
 
+@app.route('/api/import_chapter_url', methods=['GET'])
+@basic_auth.required
+def import_chapter_url():
+    try:
+        spreadsheet_id = Settings.get('sheet_id')
+        range_name = Settings.get('sheet_range')
+
+        config = config_sheet()
+        result = config.service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute(
+            http=config.http)
+
+        values = result.get('values', [])
+        #gdglist = gdgchapterurl.query().fetch()
+
+        for r in values:
+            #if r[0] not in gdglist:
+            if not gdgchapterurl.query(gdgchapterurl.groupUrlname == r[0]).fetch():
+                obj = gdgchapterurl()
+                obj.groupUrlname = r[0]
+                obj.put()
+
+        return 'importing process completed'
+    except:
+        logging.error('error into importing process')
+        raise
+
+
 # testing method to explore datastore entity
-@app.route('/testchapter/<country>', methods=['GET', 'OPTIONS'])
+@app.route('/api/testchapter/<country>', methods=['GET', 'OPTIONS'])
+@basic_auth.required
 def get_testchapter(country):
     q = gdgchapter.query(gdgchapter.countryMod == country)
     return json.dumps(q.count())
 
-@app.route('/assistchapter', methods=['POST'])
+
+@app.route('/api/assistchapter', methods=['POST'])
+@basic_auth.required
 def get_chapter():
     req = request.get_json(silent=True, force=True)
 
@@ -124,9 +140,8 @@ def get_chapter():
 
     parameters = req['queryResult']['parameters']
 
-    #print(action)
-    #print(parameters['country'][0])
-
+    # print(action)
+    # print(parameters['country'][0])
 
     res = 'I can not identify chapters in your country'
 
@@ -139,3 +154,46 @@ def get_chapter():
             res = 'The number of chapter in your country is ' + str(chapter_value)
 
     return make_response(jsonify({'fulfillmentText': res}))
+
+@app.route('/api/task_group/<url>', methods=['GET'])
+def task_group(url):
+    client = meetup.api.Client(Settings.get('meetup_key'))
+    group_info = client.GetGroup({'urlname': url})
+
+    check_chapter = gdgchapter.query(gdgchapter.groupUrl == url).fetch()
+
+    cn_name_format = COUNTRY_NAME_FORMAT_UPPER
+
+    if not check_chapter:
+        obj = gdgchapter()
+        obj.groupid = group_info.id
+        obj.groupUrl = url
+        obj.groupName = group_info.name
+        obj.countryMod = country_alpha2_to_country_name(group_info.country, cn_name_format)
+        obj.groupStatus = group_info.status
+        obj.city = group_info.city
+        obj.groupMembers = group_info.members
+
+        obj.put()
+
+        return make_response("task executed")
+
+@app.route('/api/get_direct_group', methods=['GET'])
+@basic_auth.required
+def test_group():
+    try:
+        gdg_urls = gdgchapterurl.query().fetch()
+
+        coef = 0
+        for gdg_u in gdg_urls:
+            coef += 1
+            taskqueue.add(method="GET",
+                          queue_name='meetup',
+                                 url='/api/task_group/' + gdg_u.groupUrlname ,
+                                 target='worker_' + gdg_u.groupUrlname + str(datetime.datetime.now()),
+                                 eta=datetime.datetime.now() + datetime.timedelta(seconds=(20 + coef)))
+
+        return make_response("importing from meetup completed")
+    except:
+        logging.error('error meetup access process')
+        raise
