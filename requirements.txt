@@ -1,4 +1,6 @@
 Flask
+Flask-BasicAuth
 google-api-python-client
-#click
 requests
+meetup-api
+pycountry-convert
