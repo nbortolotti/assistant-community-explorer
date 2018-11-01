@@ -1,3 +1,5 @@
+[![Gitter chat](https://badges.gitter.im/assistant-community-explorer/gitter.png)](https://gitter.im/assistant-community-explorer/gitter)
+
 # Community Assistant Explorer
 
 ## Description of the project
@@ -59,3 +61,6 @@ In the **agent-folder** is possible visualize the initial version of the **inten
 ## Modules
 Currently, the community module in which we are working is for the GDG [Google Developers Group](https://developers.google.com/programs/community/gdg/) community. 
 
+
+## Communication
+* [Discussion group access](https://groups.google.com/d/forum/assistant-community-explorer)
