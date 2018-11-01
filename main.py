@@ -2,7 +2,7 @@ import datetime
 
 from flask import Flask, jsonify, request, make_response
 from flask_basicauth import BasicAuth
-from pycountry_convert import (country_alpha2_to_country_name, COUNTRY_NAME_FORMAT_UPPER)
+from pycountry_convert import (country_alpha2_to_country_name, COUNTRY_NAME_FORMAT_DEFAULT)
 
 import httplib2
 import logging
@@ -162,11 +162,11 @@ def task_group(url):
 
     check_chapter = gdgchapter.query(gdgchapter.groupUrl == url).fetch()
 
-    cn_name_format = COUNTRY_NAME_FORMAT_UPPER
+    cn_name_format = COUNTRY_NAME_FORMAT_DEFAULT
 
     if not check_chapter:
         obj = gdgchapter()
-        obj.groupid = group_info.id
+        obj.groupid = str(group_info.id)
         obj.groupUrl = url
         obj.groupName = group_info.name
         obj.countryMod = country_alpha2_to_country_name(group_info.country, cn_name_format)
@@ -178,7 +178,7 @@ def task_group(url):
 
         return make_response("task executed")
 
-@app.route('/api/get_direct_group', methods=['GET'])
+@app.route('/api/meetup_sync', methods=['POST'])
 @basic_auth.required
 def test_group():
     try:
@@ -193,7 +193,7 @@ def test_group():
                                  target='worker_' + gdg_u.groupUrlname + str(datetime.datetime.now()),
                                  eta=datetime.datetime.now() + datetime.timedelta(seconds=(20 + coef)))
 
-        return make_response("importing from meetup completed")
+        return make_response("importing from Meetup completed")
     except:
-        logging.error('error meetup access process')
+        logging.error('error Meetup access process')
         raise
