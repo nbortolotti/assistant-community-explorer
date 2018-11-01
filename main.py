@@ -178,7 +178,7 @@ def task_group(url):
 
         return make_response("task executed")
 
-@app.route('/api/get_direct_group', methods=['GET'])
+@app.route('/api/meetup_sync', methods=['POST'])
 @basic_auth.required
 def test_group():
     try:
@@ -193,7 +193,7 @@ def test_group():
                                  target='worker_' + gdg_u.groupUrlname + str(datetime.datetime.now()),
                                  eta=datetime.datetime.now() + datetime.timedelta(seconds=(20 + coef)))
 
-        return make_response("importing from meetup completed")
+        return make_response("importing from Meetup completed")
     except:
-        logging.error('error meetup access process')
+        logging.error('error Meetup access process')
         raise

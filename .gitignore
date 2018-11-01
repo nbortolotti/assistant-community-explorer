@@ -1,6 +1,9 @@
 # Google App Engine generated folder
 appengine-generated/
 lib/
+
+# IDE pycharm
 .idea/
 
+# py
 *.pyc
