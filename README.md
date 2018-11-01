@@ -1,4 +1,4 @@
-[![Gitter chat](https://badges.gitter.im/assistant-community-explorer/gitter.png)](https://gitter.im/assistant-community-explorer/gitter)
+[![Gitter chat](https://badges.gitter.im/assistant-community-explorer/gitter.png)](https://gitter.im/assistant-community-explorer/)
 
 # Community Assistant Explorer
 
