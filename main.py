@@ -2,7 +2,7 @@ import datetime
 
 from flask import Flask, jsonify, request, make_response
 from flask_basicauth import BasicAuth
-from pycountry_convert import (country_alpha2_to_country_name, COUNTRY_NAME_FORMAT_UPPER)
+from pycountry_convert import (country_alpha2_to_country_name, COUNTRY_NAME_FORMAT_DEFAULT)
 
 import httplib2
 import logging
@@ -162,11 +162,11 @@ def task_group(url):
 
     check_chapter = gdgchapter.query(gdgchapter.groupUrl == url).fetch()
 
-    cn_name_format = COUNTRY_NAME_FORMAT_UPPER
+    cn_name_format = COUNTRY_NAME_FORMAT_DEFAULT
 
     if not check_chapter:
         obj = gdgchapter()
-        obj.groupid = group_info.id
+        obj.groupid = str(group_info.id)
         obj.groupUrl = url
         obj.groupName = group_info.name
         obj.countryMod = country_alpha2_to_country_name(group_info.country, cn_name_format)
