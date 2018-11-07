@@ -27,7 +27,7 @@ from models import Settings
 app.config['BASIC_AUTH_USERNAME'] = Settings.get('user_access')
 app.config['BASIC_AUTH_PASSWORD'] = Settings.get('pass_access')
 
-@app.route('/api/userconfirmation', methods=['GET'])
+@app.route('/api/userconfirmation', methods=['POST'])
 def user():
     app.config['BASIC_AUTH_USERNAME'] = Settings.get('user_access')
     app.config['BASIC_AUTH_PASSWORD'] = Settings.get('pass_access')
@@ -39,7 +39,7 @@ def user():
 
 @app.route('/')
 def hello():
-    return 'Hello Community Assistant Explorer '
+    return 'Hello Assistant Community Explorer '
 
 
 @app.errorhandler(404)
@@ -64,7 +64,7 @@ class config_sheet(object):
 
 
 # testing method to import information
-@app.route('/api/importschapters', methods=['GET'])
+@app.route('/api/importschapters', methods=['POST'])
 @basic_auth.required
 def import_spreadsheet():
     try:
@@ -93,7 +93,7 @@ def import_spreadsheet():
         logging.error('error into importing process')
         raise
 
-@app.route('/api/import_chapter_url', methods=['GET'])
+@app.route('/api/import_chapter_url', methods=['POST'])
 @basic_auth.required
 def import_chapter_url():
     try:
@@ -121,7 +121,7 @@ def import_chapter_url():
 
 
 # testing method to explore datastore entity
-@app.route('/api/testchapter/<country>', methods=['GET', 'OPTIONS'])
+@app.route('/api/testchapter/<country>', methods=['POST', 'OPTIONS'])
 @basic_auth.required
 def get_testchapter(country):
     q = gdgchapter.query(gdgchapter.countryMod == country)
@@ -155,7 +155,7 @@ def get_chapter():
 
     return make_response(jsonify({'fulfillmentText': res}))
 
-@app.route('/api/task_group/<url>', methods=['GET'])
+@app.route('/api/task_group/<url>', methods=['POST'])
 def task_group(url):
     client = meetup.api.Client(Settings.get('meetup_key'))
     group_info = client.GetGroup({'urlname': url})
@@ -187,7 +187,7 @@ def test_group():
         coef = 0
         for gdg_u in gdg_urls:
             coef += 1
-            taskqueue.add(method="GET",
+            taskqueue.add(method="POST",
                           queue_name='meetup',
                                  url='/api/task_group/' + gdg_u.groupUrlname ,
                                  target='worker_' + gdg_u.groupUrlname + str(datetime.datetime.now()),
