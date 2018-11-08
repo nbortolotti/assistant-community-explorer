@@ -1,5 +1,6 @@
-[![Gitter chat](https://badges.gitter.im/assistant-community-explorer/gitter.png)](https://gitter.im/assistant-community-explorer/)
+[![Build Status](https://travis-ci.org/nbortolotti/assistant-community-explorer.svg?branch=master)](https://travis-ci.org/nbortolotti/assistant-community-explorer)
 [![Crowdin](https://d322cqt584bo4o.cloudfront.net/assistant-community-explorer/localized.svg)](https://crowdin.com/project/assistant-community-explorer)
+[![Gitter chat](https://badges.gitter.im/assistant-community-explorer/gitter.png)](https://gitter.im/assistant-community-explorer/)
 
 # Community Assistant Explorer
 
