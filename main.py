@@ -7,13 +7,13 @@ from pycountry_convert import (country_alpha2_to_country_name, COUNTRY_NAME_FORM
 import httplib2
 import logging
 import json
-import googleapiclient.discovery
 
 # meetup integration
 import meetup.api
 
-from google.appengine.api import memcache
+import googleapiclient.discovery
 from oauth2client.contrib.appengine import AppAssertionCredentials
+from google.appengine.api import memcache
 from google.appengine.api import urlfetch
 from google.appengine.api import taskqueue
 

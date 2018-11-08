@@ -1,6 +1,6 @@
-Flask
-Flask-BasicAuth
-google-api-python-client
-requests
-meetup-api
-pycountry-convert
+Flask==1.0.2
+Flask-BasicAuth==0.2.0
+google-api-python-client==1.7.4
+meetup-api==0.1.1
+pycountry-convert==0.7.2
+oauth2client==4.1.3
