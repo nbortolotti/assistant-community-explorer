@@ -24,9 +24,9 @@ check the wiki section, [Architecture Overview](https://github.com/nbortolotti/a
 ### Components
 * flask, [link](http://flask.pocoo.org)
 * google-api-python-client, [link](https://github.com/googleapis/google-api-python-client)
-* requests, [link](https://pypi.org/project/requests/)
 * meetup-api, [link](https://pypi.org/project/meetup-api/)
 * pycountry-convert, [link](https://pypi.org/project/pycountry-convert/)
+* oauth2client, [link](https://pypi.org/project/oauth2client/)
 
 ## Deploy solution
 component: core community explorer
